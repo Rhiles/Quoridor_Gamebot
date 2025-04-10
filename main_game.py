@@ -1,61 +1,64 @@
 import pygame
+import sys
 from quoridor_board import Board
 
 # Constants
-WIDTH, HEIGHT = 720, 720
-ROWS, COLS = 9, 9
-TILE_SIZE = WIDTH // COLS
+BOARD_SIZE = 9
+INITIAL_WIDTH, INITIAL_HEIGHT = 1000, 600
 FPS = 60
+PLAYER_COLORS = [(255, 0, 0), (0, 0, 255)]
 
-# Colors
-WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
-BLUE = (50, 50, 255)
-RED = (255, 50, 50)
-BLACK = (0, 0, 0)
-
-# Init
+# Game initialization
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Quoridor")
+screen = pygame.display.set_mode((INITIAL_WIDTH, INITIAL_HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption("Quoridor Game")
 clock = pygame.time.Clock()
 
-# Load board
+# State
 board = Board()
+def draw_board(screen, cell_size):
+    screen.fill((30, 30, 30))  # Background
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            x = col * cell_size
+            y = row * cell_size
+            rect = pygame.Rect(x, y, cell_size, cell_size)
+            pygame.draw.rect(screen, (200, 200, 200), rect, 1)
 
-def draw_grid():
-    for x in range(COLS):
-        for y in range(ROWS):
-            rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            pygame.draw.rect(screen, GRAY, rect, 1)
+def draw_players(screen, cell_size):
+    for i, (col, row) in enumerate(board.get_player_positions()):
+        x = col * cell_size + cell_size // 2
+        y = row * cell_size + cell_size // 2
+        radius = cell_size // 3
+        pygame.draw.circle(screen, PLAYER_COLORS[i], (x, y), radius)
 
-def draw_pawns():
-    for player, (x, y) in board.pawns.items():
-        center = (x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
-        color = BLUE if player == 'P1' else RED
-        pygame.draw.circle(screen, color, center, TILE_SIZE // 3)
+def main():
+    global screen
+    width, height = screen.get_size()
 
-def draw_fences():
-    for (x, y) in board.fences['H']:
-        pygame.draw.rect(screen, BLACK, (x * TILE_SIZE, y * TILE_SIZE + TILE_SIZE//2, TILE_SIZE * 2, 10))
-    for (x, y) in board.fences['V']:
-        pygame.draw.rect(screen, BLACK, (x * TILE_SIZE + TILE_SIZE//2, y * TILE_SIZE, 10, TILE_SIZE * 2))
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-def redraw_window():
-    screen.fill(WHITE)
-    draw_grid()
-    draw_pawns()
-    draw_fences()
-    pygame.display.update()
+            elif event.type == pygame.VIDEORESIZE:
+                width, height = event.w, event.h
+                screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
-# Game loop
-running = True
-while running:
-    clock.tick(FPS)
-    redraw_window()
+            # Add click movement and wall placement handling here
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        # Calculate dynamic cell size
+        cell_size = min(width, height) // BOARD_SIZE
 
-pygame.quit()
+        draw_board(screen, cell_size)
+        draw_players(screen, cell_size)
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    pygame.quit()
+    sys.exit()
+
+if __name__ == "__main__":
+    main()

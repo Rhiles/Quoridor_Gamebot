@@ -1,5 +1,5 @@
-
 from collections import deque
+
 class Board:
     def __init__(self):
         self.size = 9
@@ -14,6 +14,9 @@ class Board:
 
     def is_within_bounds(self, x, y):
         return 0 <= x < self.size and 0 <= y < self.size
+
+    def get_player_positions(self):
+        return list(self.pawns.values())
 
     def move_pawn(self, player, new_pos):
         if self.is_within_bounds(*new_pos):
