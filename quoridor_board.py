@@ -24,15 +24,38 @@ class Board:
             return True
         return False
 
-    def place_fence(self, orientation, x, y):
-        if orientation in ('H', 'V') and self.is_valid_fence(orientation, x, y):
-            self.fences[orientation].add((x, y))
+    def is_valid_wall_placement(self, orientation, position):
+        x, y = position
+        if orientation == 'H':
+        # Bounds check: horizontal wall spans two horizontal cells
+            if x >= self.size - 1 or y >= self.size - 1:
+                return False
+        # Collision check
+            if position in self.fences['H']:
+                 False
+            if (x, y) in self.fences['V'] or (x + 1, y) in self.fences['V']:
+                return True  # they can intersect
+        # Check for overlapping horizontal walls
+            if (x - 1, y) in self.fences['H'] or (x + 1, y) in self.fences['H']:
+                return True  # adjacent is allowed
+        elif orientation == 'V':
+        # Bounds check: vertical wall spans two vertical cells
+            if x >= self.size - 1 or y >= self.size - 1:
+                return False
+            if position in self.fences['V']:
+                return False
+            if (x, y) in self.fences['H'] or (x, y + 1) in self.fences['H']:
+                return True
+            if (x, y - 1) in self.fences['V'] or (x, y + 1) in self.fences['V']:
+                return True
+        return True
+
+    def place_wall(self, orientation, position):
+        if self.is_valid_wall_placement(orientation, position):
+            self.fences[orientation].add(position)
             return True
         return False
 
-    def is_valid_fence(self, orientation, x, y):
-        # Placeholder for collision & path check logic
-        return (x, y) not in self.fences[orientation]
 
     def print_board(self):
         for y in range(self.size):
@@ -49,7 +72,7 @@ class Board:
             print(row)
 
     def get_neighbors(self, pos, opponent_pos):
-        """Returns valid adjacent squares, handling jumps over the opponent."""
+        #Returns valid adjacent squares, handling jumps over the opponent.
         x, y = pos
         ox, oy = opponent_pos
         neighbors = []
@@ -90,7 +113,7 @@ class Board:
 
 
     def is_move_blocked(self, from_pos, to_pos):
-        """Returns True if a fence blocks movement between two adjacent squares."""
+        #Returns True if a fence blocks movement between two adjacent squares.
         x1, y1 = from_pos
         x2, y2 = to_pos
 
@@ -111,12 +134,12 @@ class Board:
         return False
 
     def _fence_set(self):
-        """Returns a unified set with orientation info for easy lookup."""
+        #Returns a unified set with orientation info for easy lookup.
         return {('H', x, y) for (x, y) in self.fences['H']} | \
                {('V', x, y) for (x, y) in self.fences['V']}
 
     def bfs_shortest_path(self, start, goal_rows, opponent_pos):
-        """BFS considering jumping over opponent."""
+        #BFS considering jumping over opponent.
         queue = deque([(start, [start])])
         visited = set()
 
