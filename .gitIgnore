@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+
+# Environment variables
+.env
+*.env
+
+# VS Code settings
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Jupyter Notebook checkpoints (if used)
+.ipynb_checkpoints/
+
+# Test / coverage outputs
+htmlcov/
+coverage.xml
+*.cover
+.cache
+.pytest_cache/
+
+# Logs
+*.log
+
+# Compiled C/C++ files
+*.out
+*.o
+*.obj
+*.so
+
+# Python distribution/packaging
+build/
+dist/
+*.egg-info/
+
+# MyPy & pylint
+.mypy_cache/
+pylint-report.txt
