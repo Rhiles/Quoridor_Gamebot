@@ -9,7 +9,6 @@ def main():
     FPS = 60
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-    screen.fill((65, 65, 65))
     pygame.display.set_caption("Quoridor Game")
     clock = pygame.time.Clock()
 
@@ -26,15 +25,14 @@ def main():
             elif event.type == pygame.VIDEORESIZE:
                 width, height = event.w, event.h
                 screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-                screen.fill((65, 65, 65))
-                board.draw_board(screen)
+                board.update_board(screen)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 board.handle_on_click_event(event.pos)
-
-        board.draw_board(screen)
-        board.draw_players(screen)
-        board.display_current_player_possible_moves(screen)
-
+            elif event.type == pygame.MOUSEMOTION and board.block_mode:
+                board.handle_mouse_move_event(event.pos)
+            elif board.block_mode and event.type == pygame.MOUSEWHEEL:
+                board.switch_fence_orientation()
+        board.update_board()
         pygame.display.flip()
         clock.tick(FPS)
 
