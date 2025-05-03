@@ -181,7 +181,6 @@ class Board():
     
     def snap_fence_to_grid(self, x1, y1):
             loc = (x1, y1)
-            min_distance = 25
             self.valid_fence_placement = False
 
             for row, tile_rows in enumerate(self.tiles[:-1]):
@@ -191,11 +190,11 @@ class Board():
                     else:
                         (x2, y2) = tile.bottomleft
                     distance = math.hypot(x2 - x1, y2 - y1)
-                    if distance <= min_distance:
-                        min_distance = distance
-                        loc = (x2, y2)
-                        self.valid_fence_placement = True
-                        return loc, (row, col)
+                    if distance <= 25:
+                        if self.validate_fence_placement(row, col):
+                            loc = (x2, y2)
+                            self.valid_fence_placement = True
+                            return loc, (row, col)
             return loc, (row, col)
 
     def switch_fence_orientation(self):
@@ -203,3 +202,11 @@ class Board():
             self.selected_fence["orientation"] = "h"
         else:
             self.selected_fence["orientation"] = "v"
+
+    def validate_fence_placement(self, row, col):
+        if self.selected_fence["orientation"] == "v":
+            valid = not self.fences_cords["v"].issuperset([(row -1, col), (row, col), (row + 1, col)]) and (row, col) not in self.fences_cords["h"]
+            return valid
+        else:
+            valid = not self.fences_cords["h"].issuperset([(row, col - 1), (row, col), (row, col + 1)]) and (row, col) not in self.fences_cords["v"]
+            return valid
