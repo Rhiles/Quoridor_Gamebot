@@ -1,5 +1,7 @@
 from pygame import Surface, Rect
+from collections import deque
 import pygame
+import copy
 import math
 import os
 
@@ -15,6 +17,7 @@ class Board():
         self.player_2 = Player("Blue", (0, 4), (25, 28, 232))
         self.tiles: list[list[Rect]] = []
         self.current_player = self.player_1
+        self.opponent = self.player_2
         self.winner = None
         self.block_mode = False
         self.selected_fence = {
@@ -47,7 +50,7 @@ class Board():
         if self.current_player.winning_row == self.current_player.current_location[0]:
             self.winner = self.current_player
         else:
-            self.current_player = self.player_1 if self.current_player == self.player_2 else self.player_2
+            self.current_player, self.opponent = self.opponent, self.current_player
 
     def draw_board(self):
         self.screen.fill((65, 65, 65))
@@ -109,37 +112,38 @@ class Board():
         pygame.draw.circle(self.screen, self.current_player.color, (x + radius, y), radius)
     
     def display_valid_moves(self):
-        moves = self.get_valid_moves()
+        moves = self.get_valid_moves(self.current_player.current_location, self.opponent.current_location, self.fences_cords)
         
         for x, y in moves:
             tile:Rect = self.tiles[x][y]
             pygame.draw.rect(self.screen, (44, 145, 49), Rect(tile.left + 5, tile.top + 5, 50, 50), border_radius=5)
     
-    def get_current_player_possible_moves(self):
+    def get_possible_moves(self, player_loc, opponent_loc):
         moves = []
-        neighbours = self.current_player.get_neighbour_tiles()
-        opponent_position = self.player_2.current_location if self.current_player == self.player_1 else self.player_1.current_location
-        
-        for index, loc in enumerate(neighbours):
-            if loc == opponent_position:
-                skip_tiles = self.current_player.get_neighbour_tiles(2)
-                loc = (skip_tiles[index][0], skip_tiles[index][1]) if skip_tiles[index] else None
+        neighbours = [(0, 1), (-1, 0), (0, -1), (1, 0)] #[Right, Top, Left, Bottom]
+
+        for dx, dy in neighbours:
+            x, y = player_loc[0]+dx, player_loc[1]+dy
+            if (x, y) == opponent_loc:
+                x, y = player_loc[0]+(2*dx), player_loc[1]+(2*dy)
+            if 0 <= x <=8 and 0 <= y <=8:
+                loc = (x, y)
+            else:
+                loc = None
             moves.append(loc)
         return moves
     
-    def get_valid_moves(self):
+    def get_valid_moves(self, player_loc, opponent_loc, fences):
         valid_moves = []
-        [r, t, l, b] = self.get_current_player_possible_moves()
-        # print([r, t, l, b])
-        # print(self.fences_cords)
+        [r, t, l, b] = self.get_possible_moves(player_loc, opponent_loc)
 
-        if r and self.fences_cords["v"].isdisjoint({(r[0], r[1]-1), (r[0]-1, r[1]-1)}):
+        if r and fences["v"].isdisjoint({(r[0], r[1]-1), (r[0]-1, r[1]-1)}):
             valid_moves.append((r[0], r[1]))
-        if t and self.fences_cords["h"].isdisjoint({(t[0], t[1]-1), (t[0], t[1])}):
+        if t and fences["h"].isdisjoint({(t[0], t[1]-1), (t[0], t[1])}):
             valid_moves.append((t[0], t[1]))
-        if l and self.fences_cords["v"].isdisjoint({(l[0]-1, l[1]), (l[0], l[1])}):
+        if l and fences["v"].isdisjoint({(l[0]-1, l[1]), (l[0], l[1])}):
             valid_moves.append((l[0], l[1]))
-        if b and self.fences_cords["h"].isdisjoint({(b[0]-1, b[1]), (b[0]-1, b[1]-1)}):
+        if b and fences["h"].isdisjoint({(b[0]-1, b[1]), (b[0]-1, b[1]-1)}):
             valid_moves.append((b[0], b[1]))
         return valid_moves
 
@@ -160,7 +164,7 @@ class Board():
 
     def handle_on_click_event(self, pos):
         if not self.block_mode:
-            moves = self.get_valid_moves()
+            moves = self.get_valid_moves(self.current_player.current_location, self.opponent.current_location, self.fences_cords)
             for x, y in moves:
                 tile:Rect = self.tiles[x][y]
                 if tile.collidepoint(pos):
@@ -211,8 +215,12 @@ class Board():
                     else:
                         (x2, y2) = tile.bottomleft
                     distance = math.hypot(x2 - x1, y2 - y1)
-                    if distance <= 25:
-                        if self.validate_fence_placement(row, col):
+                    if distance <= 25 and self.validate_fence_placement(row, col, self.selected_fence["orientation"], self.fences_cords):
+                        temp_fences = copy.deepcopy(self.fences_cords)
+                        temp_fences[self.selected_fence["orientation"]].add((row, col))
+                        path_exist = (self.path_exists(self.current_player.current_location, self.current_player.winning_row, self.opponent.current_location, temp_fences)
+                                      and self.path_exists(self.opponent.current_location, self.opponent.winning_row, self.current_player.current_location, temp_fences))
+                        if path_exist:
                             loc = (x2, y2)
                             self.valid_fence_placement = True
                             return loc, (row, col)
@@ -224,10 +232,33 @@ class Board():
         else:
             self.selected_fence["orientation"] = "v"
 
-    def validate_fence_placement(self, row, col):
-        if self.selected_fence["orientation"] == "v":
-            valid = self.fences_cords["v"].isdisjoint({(row -1, col), (row, col), (row + 1, col)}) and (row, col) not in self.fences_cords["h"]
+    def validate_fence_placement(self, row, col, orientation, fences_on_board):
+        if orientation == "v":
+            valid = fences_on_board["v"].isdisjoint({(row -1, col), (row, col), (row + 1, col)}) and (row, col) not in fences_on_board["h"]
             return valid
         else:
-            valid = self.fences_cords["h"].isdisjoint({(row, col - 1), (row, col), (row, col + 1)}) and (row, col) not in self.fences_cords["v"]
+            valid = fences_on_board["h"].isdisjoint({(row, col - 1), (row, col), (row, col + 1)}) and (row, col) not in fences_on_board["v"]
             return valid
+        
+    def path_exists(self, player_loc, winning_row, opponent_loc, fences):
+        """
+        Validates if there exist a path to the winning row on placing the selected fence
+        """
+        queue = deque([player_loc])
+        visited = set()
+
+        while queue:
+            curr = queue.popleft()
+            if curr in visited:
+                continue
+            visited.add(curr)
+
+            # If player reaches any cell in the final row, path exists
+            if curr[1] == winning_row:  # or curr[0], depending on vertical/horizontal goal
+                return True
+
+            for neighbor in self.get_valid_moves(curr, opponent_loc, fences):
+                if neighbor not in visited:
+                    queue.append(neighbor)
+
+        return False  # No path found
