@@ -38,7 +38,11 @@ def main():
                 board.grab_fence(event.pos)
             elif board.block_mode and event.type == pygame.MOUSEWHEEL:
                 board.switch_fence_orientation()
-        board.update_board()
+        if board.winner:
+            # Update winning logic properly
+            screen.fill(board.winner.color)
+        else:
+            board.update_board()
         pygame.display.flip()
         clock.tick(FPS)
 

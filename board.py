@@ -15,6 +15,7 @@ class Board():
         self.player_2 = Player("Blue", (0, 4), (25, 28, 232))
         self.tiles: list[list[Rect]] = []
         self.current_player = self.player_1
+        self.winner = None
         self.block_mode = False
         self.selected_fence = {
             "loc": (0, 0),
@@ -40,8 +41,13 @@ class Board():
         if self.block_mode:
             self.preview_fence()
         else:
-            self.display_current_player_possible_moves()
+            self.display_valid_moves()
 
+    def switch_turns(self):
+        if self.current_player.winning_row == self.current_player.current_location[0]:
+            self.winner = self.current_player
+        else:
+            self.current_player = self.player_1 if self.current_player == self.player_2 else self.player_2
 
     def draw_board(self):
         self.screen.fill((65, 65, 65))
@@ -102,8 +108,8 @@ class Board():
         radius = 22.5
         pygame.draw.circle(self.screen, self.current_player.color, (x + radius, y), radius)
     
-    def display_current_player_possible_moves(self):
-        moves = self.get_current_player_possible_moves()
+    def display_valid_moves(self):
+        moves = self.get_valid_moves()
         
         for x, y in moves:
             tile:Rect = self.tiles[x][y]
@@ -114,12 +120,28 @@ class Board():
         neighbours = self.current_player.get_neighbour_tiles()
         opponent_position = self.player_2.current_location if self.current_player == self.player_1 else self.player_1.current_location
         
-        for index, (x, y) in enumerate(neighbours):
-            if (x, y) == opponent_position:
+        for index, loc in enumerate(neighbours):
+            if loc == opponent_position:
                 skip_tiles = self.current_player.get_neighbour_tiles(2)
-                x, y = skip_tiles[index][0], skip_tiles[index][1]
-            moves.append((x, y))
+                loc = (skip_tiles[index][0], skip_tiles[index][1]) if skip_tiles[index] else None
+            moves.append(loc)
         return moves
+    
+    def get_valid_moves(self):
+        valid_moves = []
+        [r, t, l, b] = self.get_current_player_possible_moves()
+        # print([r, t, l, b])
+        # print(self.fences_cords)
+
+        if r and self.fences_cords["v"].isdisjoint({(r[0], r[1]-1), (r[0]-1, r[1]-1)}):
+            valid_moves.append((r[0], r[1]))
+        if t and self.fences_cords["h"].isdisjoint({(t[0], t[1]-1), (t[0], t[1])}):
+            valid_moves.append((t[0], t[1]))
+        if l and self.fences_cords["v"].isdisjoint({(l[0]-1, l[1]), (l[0], l[1])}):
+            valid_moves.append((l[0], l[1]))
+        if b and self.fences_cords["h"].isdisjoint({(b[0]-1, b[1]), (b[0]-1, b[1]-1)}):
+            valid_moves.append((b[0], b[1]))
+        return valid_moves
 
     def draw_players(self):
         for player in [self.player_1, self.player_2]:
@@ -129,8 +151,7 @@ class Board():
 
     def move_player(self, _from, _to):
         self.current_player.update_current_location(_to)
-
-        self.current_player = self.player_1 if self.current_player == self.player_2 else self.player_2
+        self.switch_turns()
 
     def preview_fence(self):
         fence: Rect = self.selected_fence["fence"]
@@ -139,7 +160,7 @@ class Board():
 
     def handle_on_click_event(self, pos):
         if not self.block_mode:
-            moves = self.get_current_player_possible_moves()
+            moves = self.get_valid_moves()
             for x, y in moves:
                 tile:Rect = self.tiles[x][y]
                 if tile.collidepoint(pos):
@@ -173,7 +194,7 @@ class Board():
         self.fences_cords[self.selected_fence["orientation"]].add(self.selected_fence["loc"])
         self.block_mode = False
         
-        self.current_player = self.player_1 if self.current_player == self.player_2 else self.player_2
+        self.switch_turns()
     
     def draw_fences(self):
         for fence in self.fences:
@@ -205,8 +226,8 @@ class Board():
 
     def validate_fence_placement(self, row, col):
         if self.selected_fence["orientation"] == "v":
-            valid = not self.fences_cords["v"].issuperset([(row -1, col), (row, col), (row + 1, col)]) and (row, col) not in self.fences_cords["h"]
+            valid = self.fences_cords["v"].isdisjoint({(row -1, col), (row, col), (row + 1, col)}) and (row, col) not in self.fences_cords["h"]
             return valid
         else:
-            valid = not self.fences_cords["h"].issuperset([(row, col - 1), (row, col), (row, col + 1)]) and (row, col) not in self.fences_cords["v"]
+            valid = self.fences_cords["h"].isdisjoint({(row, col - 1), (row, col), (row, col + 1)}) and (row, col) not in self.fences_cords["v"]
             return valid
