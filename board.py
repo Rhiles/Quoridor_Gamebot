@@ -51,8 +51,10 @@ class Board():
     def get_game_state(self):
         state = {
             "player_loc": self.current_player.current_location,
+            "player_fence_count": self.current_player.fence_count,
             "player_winning_row": self.current_player.winning_row,
             "opponent_loc": self.opponent.current_location,
+            "opponent_fence_count": self.opponent.fence_count,
             "opponent_winning_row": self.opponent.winning_row,
             "fences": copy.deepcopy(self.fences_cords)
         }
@@ -203,6 +205,19 @@ class Board():
         else:
             x, y = pos[0] -67.5, pos[1] - 7.5
             (x, y), loc = self.snap_fence_to_grid(x, y)
+            self.selected_fence["fence"] = Rect(x, y, 135, 15)
+            self.selected_fence["loc"] = loc
+    
+    def set_selected_fence(self, loc, orientation):
+        row, col = loc
+        if orientation == "v":
+            tile: Rect = self.tiles[row][col]
+            x, y = tile.topright
+            self.selected_fence["fence"] = Rect(x, y, 15, 135)
+            self.selected_fence["loc"] = loc
+        else:
+            tile: Rect = self.tiles[row][col]
+            x, y = tile.bottomleft
             self.selected_fence["fence"] = Rect(x, y, 135, 15)
             self.selected_fence["loc"] = loc
 

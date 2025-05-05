@@ -1,4 +1,5 @@
 from queue import PriorityQueue
+import copy
 
 from Agents.Agent import Agent
 
@@ -9,15 +10,35 @@ class Alice(Agent):
         self.ready_to_play = False
     
     def make_decision(self):
+        print("Decision Pending...")
         self.opponent = self.board.opponent
         self.game_state = self.board.get_game_state()
-        self.path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
-        print("Decision Pending...")
-    
+        print("fence count: ", self.fence_count)
+        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state)) if self.fence_count > 0 else None
+        
+        best_path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
+        nxt_move = best_path[0]
+        move_score = self.evaluate_game_state(
+            nxt_move,
+            self.game_state["player_winning_row"],
+            self.game_state["opponent_loc"],
+            self.game_state["opponent_winning_row"],
+            self.game_state["fences"],
+            self.game_state["player_fence_count"],
+            self.game_state["opponent_fence_count"]
+        )
+
+        self.nxt_move = {"score": move_score, "move": nxt_move}
+
     def make_move(self):
-        if len(self.path) > 0:
-            move_to = self.path.pop(0)
-            self.board.move_player(move_to)
+        print(self.fence_pos)
+        print(self.nxt_move)
+        if self.fence_pos == None or self.nxt_move["score"] > self.fence_pos["score"]:
+            self.board.move_player(self.nxt_move["move"])
+        else:
+            self.board.set_selected_fence(self.fence_pos["loc"], self.fence_pos["orientation"])
+            self.board.place_fence()
+            self.fence_count -= 1
         print("Made Move...")
 
     def find_shortest_path(self, start_pos, goal, opponent_loc, fences):
@@ -46,3 +67,84 @@ class Alice(Agent):
                     g_score[neighbor] = tentative_g
                     f = tentative_g + abs(neighbor[0] - goal)
                     open_set.put((f, neighbor))
+
+    def find_best_fence_placement(self, game_state):
+        player_loc = game_state["player_loc"]
+        player_fences_left = game_state["player_fence_count"]
+        player_winning_row = game_state["player_winning_row"]
+        opponent_loc = game_state["opponent_loc"]
+        opponent_fences_left = game_state["opponent_fence_count"]
+        opponent_winning_row = game_state["opponent_winning_row"]
+        fences = game_state["fences"]
+        best_score = 0
+        best_placement = None
+        
+        for orientation in ["v", "h"]:
+            for row in range(8):
+                for col in range(8):
+                    if self.board.validate_fence_placement(row, col, orientation, fences):
+                        temp_fences = copy.deepcopy(fences)
+                        temp_fences[orientation].add((row, col))
+                        
+                        # Ensure path still exists
+                        if not (self.board.path_exists(player_loc, player_winning_row, opponent_loc, temp_fences)
+                                and self.board.path_exists(opponent_loc, opponent_winning_row, player_loc, temp_fences)):
+                            continue
+
+                        # Get shortest paths
+                        winning_path = self.find_shortest_path(player_loc, player_winning_row, opponent_loc, temp_fences)
+                        opponent_path = self.find_shortest_path(opponent_loc, opponent_winning_row, player_loc, temp_fences)
+
+                        if not winning_path or not opponent_path:
+                            continue
+
+                        score = self.evaluate_game_state(
+                            player_loc,
+                            player_winning_row,
+                            opponent_loc,
+                            opponent_winning_row,
+                            temp_fences,
+                            player_fences_left - 1,  # one less fence
+                            opponent_fences_left
+                        )
+
+                        # Track the best move
+                        if score > best_score:
+                            best_score = score
+                            best_placement = {
+                                "orientation": orientation,
+                                "loc": (row, col),
+                                "score": score
+                            }
+        return best_placement
+    
+    def evaluate_game_state(self, player_loc, player_winning_row, opponent_loc, opponent_winning_row, fences, player_fences_left, opponent_fences_left):
+        # Shortest path lengths
+        bot_path = self.find_shortest_path(player_loc, player_winning_row, opponent_loc, fences)
+        opp_path = self.find_shortest_path(opponent_loc, opponent_winning_row, player_loc, fences)
+
+        if bot_path is None or opp_path is None:
+            return float('-inf')  # invalid state (shouldn't happen if path_exists is used properly)
+
+        len_bot_path = len(bot_path)
+        len_opp_path = len(opp_path)
+
+        # Heuristic 1: Difference in path lengths
+        H1 = len_opp_path - len_bot_path
+
+        # Heuristic 2: Mobility (number of valid moves)
+        H2 = len(self.board.get_valid_moves(player_loc, opponent_loc, fences))
+        H2_opponent = len(self.board.get_valid_moves(opponent_loc, player_loc, fences))
+
+        # Heuristic 3: Distance from center
+        center = (4, 4)
+        H3 = abs(player_loc[0] - center[0]) + abs(player_loc[1] - center[1])
+
+        # Heuristic 4: Fence advantage
+        H4 = player_fences_left - opponent_fences_left
+
+        # Combine using weights
+        score = 3 * H1 + 1 * H2 + 0.5 * H3 + 1 * H4
+
+        return score
+
