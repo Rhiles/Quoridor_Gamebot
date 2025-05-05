@@ -52,13 +52,14 @@ def main():
         if board.winner:
             # Update winning logic properly
             screen.fill(board.winner.color)
+            running = False
         else:
             board.update_board()
         
-        if isinstance(board.current_player, Agent) and not agent_calculating:
-            agent_calculating = True
-            board.current_player.make_decision()
-            pygame.time.set_timer(pygame.USEREVENT, 2500)
+            if isinstance(board.current_player, Agent) and not agent_calculating:
+                agent_calculating = True
+                board.current_player.make_decision()
+                pygame.time.set_timer(pygame.USEREVENT, 1500)
         pygame.display.flip()
         clock.tick(FPS)
 

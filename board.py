@@ -215,11 +215,13 @@ class Board():
             x, y = tile.topright
             self.selected_fence["fence"] = Rect(x, y, 15, 135)
             self.selected_fence["loc"] = loc
+            self.selected_fence["orientation"] = orientation
         else:
             tile: Rect = self.tiles[row][col]
             x, y = tile.bottomleft
             self.selected_fence["fence"] = Rect(x, y, 135, 15)
             self.selected_fence["loc"] = loc
+            self.selected_fence["orientation"] = orientation
 
     def place_fence(self):
         fence = self.selected_fence["fence"]

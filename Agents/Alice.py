@@ -13,8 +13,7 @@ class Alice(Agent):
         print("Decision Pending...")
         self.opponent = self.board.opponent
         self.game_state = self.board.get_game_state()
-        print("fence count: ", self.fence_count)
-        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state)) if self.fence_count > 0 else None
+        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state))
         
         best_path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
         nxt_move = best_path[0]
@@ -119,18 +118,21 @@ class Alice(Agent):
         return best_placement
     
     def evaluate_game_state(self, player_loc, player_winning_row, opponent_loc, opponent_winning_row, fences, player_fences_left, opponent_fences_left):
-        # Shortest path lengths
-        bot_path = self.find_shortest_path(player_loc, player_winning_row, opponent_loc, fences)
-        opp_path = self.find_shortest_path(opponent_loc, opponent_winning_row, player_loc, fences)
+        if player_loc != player_winning_row:
+            # Shortest path lengths
+            bot_path = self.find_shortest_path(player_loc, player_winning_row, opponent_loc, fences)
+            opp_path = self.find_shortest_path(opponent_loc, opponent_winning_row, player_loc, fences)
 
-        if bot_path is None or opp_path is None:
-            return float('-inf')  # invalid state (shouldn't happen if path_exists is used properly)
+            if bot_path is None or opp_path is None:
+                return float('-inf')  # invalid state (shouldn't happen if path_exists is used properly)
 
-        len_bot_path = len(bot_path)
-        len_opp_path = len(opp_path)
+            len_bot_path = len(bot_path)
+            len_opp_path = len(opp_path)
 
-        # Heuristic 1: Difference in path lengths
-        H1 = len_opp_path - len_bot_path
+            # Heuristic 1: Difference in path lengths
+            H1 = len_opp_path - len_bot_path
+        else:
+            H1 = float('inf')
 
         # Heuristic 2: Mobility (number of valid moves)
         H2 = len(self.board.get_valid_moves(player_loc, opponent_loc, fences))
