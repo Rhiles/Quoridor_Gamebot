@@ -130,33 +130,35 @@ class Board():
             tile:Rect = self.tiles[x][y]
             pygame.draw.rect(self.screen, (44, 145, 49), Rect(tile.left + 5, tile.top + 5, 50, 50), border_radius=5)
     
-    def get_possible_moves(self, player_loc, opponent_loc):
-        moves = []
-        neighbours = [(0, 1), (-1, 0), (0, -1), (1, 0)] #[Right, Top, Left, Bottom]
-
-        for dx, dy in neighbours:
-            x, y = player_loc[0]+dx, player_loc[1]+dy
-            if (x, y) == opponent_loc:
-                x, y = player_loc[0]+(2*dx), player_loc[1]+(2*dy)
-            if 0 <= x <=8 and 0 <= y <=8:
-                loc = (x, y)
-            else:
-                loc = None
-            moves.append(loc)
-        return moves
+    def is_valid_move(self, _from, _to, fences):
+        valid = False
+        if 0 <= _to[0] <= 8 and 0 <= _to[1] <= 8:
+            if _from[0] == _to[0]:
+                valid = fences["v"].isdisjoint({(_to[0], min(_from[1], _to[1])), (_to[0] - 1, min(_from[1], _to[1]))})
+            elif _from[1] == _to[1]:
+                valid = fences["h"].isdisjoint({(min(_from[0],_to[0]), _to[1]), (min(_from[0],_to[0]), _to[1] - 1)})
+        return valid
     
     def get_valid_moves(self, player_loc, opponent_loc, fences):
-        valid_moves = []
-        [r, t, l, b] = self.get_possible_moves(player_loc, opponent_loc)
+        valid_moves = set()
+        neighbours = [(0, 1), (-1, 0), (0, -1), (1, 0)]
 
-        if r and fences["v"].isdisjoint({(r[0], r[1]-1), (r[0]-1, r[1]-1)}):
-            valid_moves.append((r[0], r[1]))
-        if t and fences["h"].isdisjoint({(t[0], t[1]-1), (t[0], t[1])}):
-            valid_moves.append((t[0], t[1]))
-        if l and fences["v"].isdisjoint({(l[0]-1, l[1]), (l[0], l[1])}):
-            valid_moves.append((l[0], l[1]))
-        if b and fences["h"].isdisjoint({(b[0]-1, b[1]), (b[0]-1, b[1]-1)}):
-            valid_moves.append((b[0], b[1]))
+        for dx, dy in neighbours:
+            x1, y1 = player_loc
+            x2, y2 = x1 + dx, y1 + dy
+            if self.is_valid_move((x1, y1), (x2, y2), fences):
+                if (x2, y2) == opponent_loc:
+                    ox2, oy2 = x2+dx, y2+dy
+                    if self.is_valid_move(opponent_loc, (ox2, oy2), fences):
+                        valid_moves.add((ox2, oy2))
+                    else:
+                        ox, oy = opponent_loc
+                        for odx, ody in neighbours:
+                            ox2, oy2 = ox+odx, oy+ody
+                            if (ox2, oy2) != player_loc and self.is_valid_move((ox, oy), (ox2, oy2), fences):
+                                valid_moves.add((ox2, oy2))
+                else:
+                    valid_moves.add((x2, y2))
         return valid_moves
 
     def draw_players(self):
@@ -267,7 +269,7 @@ class Board():
             visited.add(curr)
 
             # If player reaches any cell in the final row, path exists
-            if curr[1] == winning_row:  # or curr[0], depending on vertical/horizontal goal
+            if curr[0] == winning_row:
                 return True
 
             for neighbor in self.get_valid_moves(curr, opponent_loc, fences):
