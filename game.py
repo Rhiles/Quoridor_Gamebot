@@ -55,13 +55,13 @@ def main():
             running = False
         else:
             board.update_board()
-        
+            pygame.display.flip()
+            clock.tick(FPS)
+
             if isinstance(board.current_player, Agent) and not agent_calculating:
                 agent_calculating = True
                 board.current_player.make_decision()
-                pygame.time.set_timer(pygame.USEREVENT, 1500)
-        pygame.display.flip()
-        clock.tick(FPS)
+                pygame.time.set_timer(pygame.USEREVENT, 100)
 
     pygame.quit()
     sys.exit()

@@ -1,4 +1,5 @@
 from queue import PriorityQueue
+import random
 import copy
 
 from Agents.Agent import Agent
@@ -10,35 +11,132 @@ class Alice(Agent):
         self.ready_to_play = False
     
     def make_decision(self):
-        print("Decision Pending...")
         self.opponent = self.board.opponent
         self.game_state = self.board.get_game_state()
-        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state))
-        
-        best_path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
-        nxt_move = best_path[0]
-        move_score = self.evaluate_game_state(
-            nxt_move,
-            self.game_state["player_winning_row"],
-            self.game_state["opponent_loc"],
-            self.game_state["opponent_winning_row"],
-            self.game_state["fences"],
-            self.game_state["player_fence_count"],
-            self.game_state["opponent_fence_count"]
-        )
+        _, best_state = self.minimax(self.game_state, depth=self.difficulty, alpha=float('-inf'), beta=float('inf'), maximizing_player=True)
 
-        self.nxt_move = {"score": move_score, "move": nxt_move}
+        # Determine move or fence difference between self.game_state and best_state
+        if best_state["player_loc"] != self.game_state["player_loc"]:
+            self.nxt_move = {"score": _, "move": best_state["player_loc"]}
+            self.fence_pos = None
+        else:
+            # Find which fence was added
+            for orient in ["v", "h"]:
+                new_fences = best_state["fences"][orient] - self.game_state["fences"][orient]
+                if new_fences:
+                    loc = list(new_fences)[0]
+                    self.fence_pos = {"loc": loc, "orientation": orient, "score": _}
+                    self.nxt_move = None
+
 
     def make_move(self):
-        print(self.fence_pos)
-        print(self.nxt_move)
-        if self.fence_pos == None or self.nxt_move["score"] > self.fence_pos["score"]:
+        if self.fence_pos == None:
             self.board.move_player(self.nxt_move["move"])
         else:
             self.board.set_selected_fence(self.fence_pos["loc"], self.fence_pos["orientation"])
             self.board.place_fence()
             self.fence_count -= 1
-        print("Made Move...")
+
+    def game_over(self, game_state):
+        player_row = game_state["player_loc"]
+        opponent_row = game_state["opponent_loc"]
+        
+        # Check if the bot (current player) has reached the winning row
+        if player_row[0] == game_state["player_winning_row"]:
+            return True
+
+        # Check if the opponent has reached their winning row
+        if opponent_row[0] == game_state["opponent_winning_row"]:
+            return True
+
+        return False
+
+    def minimax(self, state, depth, alpha, beta, maximizing_player):
+        if depth == 0 or self.game_over(state):
+            return self.evaluate_game_state(
+                state["player_loc"],
+                state["player_winning_row"],
+                state["opponent_loc"],
+                state["opponent_winning_row"],
+                state["fences"],
+                state["player_fence_count"],
+                state["opponent_fence_count"]
+            ), state
+
+        best_states = []
+
+        if maximizing_player:
+            max_eval = float('-inf')
+            for child in self.generate_child_states(state, is_bot=True):
+                eval_score, _ = self.minimax(child, depth - 1, alpha, beta, False)
+                if eval_score > max_eval:
+                    max_eval = eval_score
+                    best_states = [child]
+                elif eval_score == max_eval:
+                    best_states.append(child)
+                alpha = max(alpha, eval_score)
+                if beta <= alpha:
+                    break
+            return max_eval, random.choice(best_states)
+
+        else:
+            min_eval = float('inf')
+            for child in self.generate_child_states(state, is_bot=False):
+                eval_score, _ = self.minimax(child, depth - 1, alpha, beta, True)
+                if eval_score < min_eval:
+                    min_eval = eval_score
+                    best_states = [child]
+                elif eval_score == min_eval:
+                    best_states.append(child)
+                beta = min(beta, eval_score)
+                if beta <= alpha:
+                    break
+            return min_eval, random.choice(best_states)
+
+
+    def generate_child_states(self, game_state, is_bot):
+        child_states = []
+
+        player_key = "player_loc" if is_bot else "opponent_loc"
+        opponent_key = "opponent_loc" if is_bot else "player_loc"
+        player_fences = "player_fence_count" if is_bot else "opponent_fence_count"
+        opponent_fences = "opponent_fence_count" if is_bot else "player_fence_count"
+        player_winning = "player_winning_row" if is_bot else "opponent_winning_row"
+        opponent_winning = "opponent_winning_row" if is_bot else "player_winning_row"
+
+        curr_loc = game_state[player_key]
+        opponent_loc = game_state[opponent_key]
+        fences = game_state["fences"]
+        fences_left = game_state[player_fences]
+
+        # 1. All move options
+        for move in self.board.get_valid_moves(curr_loc, opponent_loc, fences):
+            new_state = copy.deepcopy(game_state)
+            new_state[player_key] = move
+            child_states.append(new_state)
+
+        # 2. All valid fence placements
+        if fences_left > 0:
+            for orientation in ["v", "h"]:
+                for row in range(8):
+                    for col in range(8):
+                        if self.board.validate_fence_placement(row, col, orientation, fences):
+                            temp_fences = copy.deepcopy(fences)
+                            temp_fences[orientation].add((row, col))
+
+                            # Ensure both players still have valid paths
+                            if not (
+                                self.board.path_exists(game_state["player_loc"], game_state["player_winning_row"], game_state["opponent_loc"], temp_fences) and
+                                self.board.path_exists(game_state["opponent_loc"], game_state["opponent_winning_row"], game_state["player_loc"], temp_fences)
+                            ):
+                                continue
+
+                            new_state = copy.deepcopy(game_state)
+                            new_state["fences"] = temp_fences
+                            new_state[player_fences] -= 1
+                            child_states.append(new_state)
+
+        return child_states
 
     def find_shortest_path(self, start_pos, goal, opponent_loc, fences):
         open_set = PriorityQueue()
