@@ -15,3 +15,6 @@ class Agent(Player):
     
     def make_move(self):
         return
+    
+    def get_move(self):
+        return

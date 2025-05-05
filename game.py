@@ -6,65 +6,87 @@ from player import Player
 from Agents.Agent import Agent
 from Agents.Alice import Alice
 
-def main():
-    WIDTH = 1100
-    HEIGHT = 770
-    FPS = 60
-    pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("Quoridor Game")
-    clock = pygame.time.Clock()
-
-
-    width, height = screen.get_size()
+def main(visual_mode=True, max_turns=200):
+    if visual_mode:
+        pygame.init()
+        screen = pygame.display.set_mode((1100, 770), pygame.RESIZABLE)
+        pygame.display.set_caption("Quoridor Game")
+        clock = pygame.time.Clock()
+    else:
+        screen = None
 
     player_1 = Player("Red", (8, 4), (226, 37, 37))
     player_2 = Alice((0, 4), (25, 28, 232))
     board = Board(screen, player_1, player_2)
+    
     agent_calculating = False
     running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+    turn_count = 0
+    move_log = []  # To store logs for moves and decisions
+    
+    while running and turn_count < max_turns:
+        if visual_mode:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.VIDEORESIZE:
+                    screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+                    board.update_board(screen)
+                elif not isinstance(board.current_player, Agent) and event.type == pygame.MOUSEBUTTONDOWN:
+                    # Right click to stop placing the fences
+                    if board.block_mode and event.button == 3:
+                        board.switch_to_move_mode()
+                    elif board.block_mode and board.valid_fence_placement and event.button == 1:
+                        board.place_fence()
+                    else:
+                        board.handle_on_click_event(event.pos)
+                elif not isinstance(board.current_player, Agent) and event.type == pygame.MOUSEMOTION and board.block_mode:
+                    board.grab_fence(event.pos)
+                elif not isinstance(board.current_player, Agent) and board.block_mode and event.type == pygame.MOUSEWHEEL:
+                    board.switch_fence_orientation()
+                elif event.type == pygame.USEREVENT:
+                    if isinstance(board.current_player, Agent):
+                        board.current_player.make_move()
+                        agent_calculating = False
+                        pygame.time.set_timer(pygame.USEREVENT, 0)
 
-            elif event.type == pygame.VIDEORESIZE:
-                width, height = event.w, event.h
-                screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-                board.update_board(screen)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Right click to stop placing the fences
-                if board.block_mode and event.button == 3:
-                    board.switch_to_move_mode()
-                elif board.block_mode and board.valid_fence_placement and event.button == 1:
-                    board.place_fence()
-                else:
-                    board.handle_on_click_event(event.pos)
-            elif event.type == pygame.MOUSEMOTION and board.block_mode:
-                board.grab_fence(event.pos)
-            elif board.block_mode and event.type == pygame.MOUSEWHEEL:
-                board.switch_fence_orientation()
-            elif event.type == pygame.USEREVENT:
-                if isinstance(board.current_player, Agent):
-                    board.current_player.make_move()
-                    agent_calculating = False
-                    pygame.time.set_timer(pygame.USEREVENT, 0)
+                        # Log the move and decision
+                        move_log.append({
+                            "turn": turn_count + 1,
+                            "player": board.current_player.name,
+                            "player_location": board.current_player.current_location,
+                            "move": board.current_player.get_move()
+                        })
+                        turn_count += 1
+
         if board.winner:
-            # Update winning logic properly
-            screen.fill(board.winner.color)
-            running = False
-        else:
-            board.update_board()
+            if visual_mode:
+                screen.fill(board.winner.color)
+            print(f"Winner: {board.winner.name}")
+            break
+
+        if visual_mode:
+            board.update_board()  # Updates the board visually
             pygame.display.flip()
-            clock.tick(FPS)
+            clock.tick(60)
 
-            if isinstance(board.current_player, Agent) and not agent_calculating:
-                agent_calculating = True
-                board.current_player.make_decision()
-                pygame.time.set_timer(pygame.USEREVENT, 100)
+        if isinstance(board.current_player, Agent) and not agent_calculating:
+            player = board.current_player
+            print(f"Turn {turn_count + 1}: {player.name} is making a move...")
+            agent_calculating = True
+            player.make_decision()  # Let the agent decide
 
-    pygame.quit()
-    sys.exit()
+            pygame.time.set_timer(pygame.USEREVENT, 250)
+
+
+    if visual_mode:
+        pygame.quit()
+        sys.exit()
+
+    # If headless mode, you can log the moves or game history
+    print("Game over! Final state:")
+    for log in move_log:
+        print(log)
 
 if __name__ == "__main__":
-    main()
+    main(visual_mode=True)

@@ -9,6 +9,9 @@ class Alice(Agent):
         super().__init__("Alice", location, color)
         self.board = None
         self.ready_to_play = False
+
+    def get_move(self):
+        return self.nxt_move if self.nxt_move != None else self.fence_pos
     
     def make_decision(self):
         self.opponent = self.board.opponent

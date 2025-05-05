@@ -34,7 +34,6 @@ class Board():
         for player in [self.current_player, self.opponent]:
             if isinstance(player, Agent):
                 player.set_board_context(self)
-        self.update_board()
 
     def update_board(self, screen:Surface = None):
         if screen is None:
