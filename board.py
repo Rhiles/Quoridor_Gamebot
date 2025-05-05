@@ -6,18 +6,17 @@ import math
 import os
 
 from player import Player
+from Agents.Agent import Agent
 
 
 class Board():
-    def __init__(self, screen: Surface):
+    def __init__(self, screen: Surface, player_1:Player, player_2:Player):
         self.screen = screen
         self.tile_width = 60
         self.fence_color = (225, 157, 0)
-        self.player_1 = Player("Red", (8, 4), (226, 37, 37))
-        self.player_2 = Player("Blue", (0, 4), (25, 28, 232))
         self.tiles: list[list[Rect]] = []
-        self.current_player = self.player_1
-        self.opponent = self.player_2
+        self.current_player: Player =  player_1
+        self.opponent: Player = player_2
         self.winner = None
         self.block_mode = False
         self.selected_fence = {
@@ -32,6 +31,9 @@ class Board():
             "v": set()
         }
 
+        for player in [self.current_player, self.opponent]:
+            if isinstance(player, Agent):
+                player.set_board_context(self)
         self.update_board()
 
     def update_board(self, screen:Surface = None):
@@ -45,6 +47,16 @@ class Board():
             self.preview_fence()
         else:
             self.display_valid_moves()
+
+    def get_game_state(self):
+        state = {
+            "player_loc": self.current_player.current_location,
+            "player_winning_row": self.current_player.winning_row,
+            "opponent_loc": self.opponent.current_location,
+            "opponent_winning_row": self.opponent.winning_row,
+            "fences": copy.deepcopy(self.fences_cords)
+        }
+        return state
 
     def switch_turns(self):
         if self.current_player.winning_row == self.current_player.current_location[0]:
@@ -84,7 +96,7 @@ class Board():
 
         # Draw player stats
         draw_pos = (play_stats.left + 22, play_stats.top + 40)
-        for player in [self.player_2, self.player_1]:
+        for player in [self.opponent, self.current_player]:
             name = font.render(player.name, True, (225, 225, 225))
             name_rect = self.screen.blit(name, draw_pos)
             x, y = name_rect.midright[0] + 7, name_rect.midright[1]
@@ -148,12 +160,12 @@ class Board():
         return valid_moves
 
     def draw_players(self):
-        for player in [self.player_1, self.player_2]:
+        for player in [self.current_player, self.opponent]:
             x, y = player.current_location
             tile: Rect = self.tiles[x][y]
             pygame.draw.circle(self.screen, player.color, tile.center, 22.5)
 
-    def move_player(self, _from, _to):
+    def move_player(self, _to):
         self.current_player.update_current_location(_to)
         self.switch_turns()
 
@@ -168,7 +180,7 @@ class Board():
             for x, y in moves:
                 tile:Rect = self.tiles[x][y]
                 if tile.collidepoint(pos):
-                    self.move_player(self.current_player.current_location, (x, y))
+                    self.move_player((x, y))
 
             for fence in self.current_player.fences:
                 if fence.collidepoint(pos):
@@ -243,6 +255,7 @@ class Board():
     def path_exists(self, player_loc, winning_row, opponent_loc, fences):
         """
         Validates if there exist a path to the winning row on placing the selected fence
+        Uses Breadth First Search (BFS) algorithm to find the path existance
         """
         queue = deque([player_loc])
         visited = set()

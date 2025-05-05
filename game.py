@@ -2,6 +2,9 @@ import pygame
 import sys
 
 from board import Board
+from player import Player
+from Agents.Agent import Agent
+from Agents.Alice import Alice
 
 def main():
     WIDTH = 1100
@@ -15,7 +18,10 @@ def main():
 
     width, height = screen.get_size()
 
-    board = Board(screen)
+    player_1 = Player("Red", (8, 4), (226, 37, 37))
+    player_2 = Alice((0, 4), (25, 28, 232))
+    board = Board(screen, player_1, player_2)
+    agent_calculating = False
     running = True
     while running:
         for event in pygame.event.get():
@@ -38,11 +44,21 @@ def main():
                 board.grab_fence(event.pos)
             elif board.block_mode and event.type == pygame.MOUSEWHEEL:
                 board.switch_fence_orientation()
+            elif event.type == pygame.USEREVENT:
+                if isinstance(board.current_player, Agent):
+                    board.current_player.make_move()
+                    agent_calculating = False
+                    pygame.time.set_timer(pygame.USEREVENT, 0)
         if board.winner:
             # Update winning logic properly
             screen.fill(board.winner.color)
         else:
             board.update_board()
+        
+        if isinstance(board.current_player, Agent) and not agent_calculating:
+            agent_calculating = True
+            board.current_player.make_decision()
+            pygame.time.set_timer(pygame.USEREVENT, 2500)
         pygame.display.flip()
         clock.tick(FPS)
 
