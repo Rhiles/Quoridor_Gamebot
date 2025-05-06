@@ -222,11 +222,14 @@ class Board():
             self.selected_fence["loc"] = loc
             self.selected_fence["orientation"] = orientation
 
-    def place_fence(self):
-        fence = self.selected_fence["fence"]
-        self.fences.append(fence)
-        self.fences_cords[self.selected_fence["orientation"]].add(self.selected_fence["loc"])
-        self.block_mode = False
+    def place_fence(self, non_visual_fence = None):
+        if non_visual_fence == None:
+            fence = self.selected_fence["fence"]
+            self.fences.append(fence)
+            self.fences_cords[self.selected_fence["orientation"]].add(self.selected_fence["loc"])
+            self.block_mode = False
+        else:
+            self.fences_cords[non_visual_fence["orientation"]].add(non_visual_fence["loc"])
         
         self.switch_turns()
     

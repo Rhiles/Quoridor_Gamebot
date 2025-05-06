@@ -13,7 +13,7 @@ class Agent(Player):
     def make_decision(self):
         return
     
-    def make_move(self):
+    def make_move(self, visual_mode):
         return
     
     def get_move(self):

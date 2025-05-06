@@ -9,9 +9,7 @@ class Alice(Agent):
         super().__init__("Alice", location, color)
         self.board = None
         self.ready_to_play = False
-
-    def get_move(self):
-        return self.nxt_move if self.nxt_move != None else self.fence_pos
+        self.nxt_move = self.fence_pos = None
     
     def make_decision(self):
         self.opponent = self.board.opponent
@@ -32,13 +30,23 @@ class Alice(Agent):
                     self.nxt_move = None
 
 
-    def make_move(self):
+    def make_move(self, visual_mode):
         if self.fence_pos == None:
             self.board.move_player(self.nxt_move["move"])
         else:
-            self.board.set_selected_fence(self.fence_pos["loc"], self.fence_pos["orientation"])
-            self.board.place_fence()
+            if visual_mode:
+                self.board.set_selected_fence(self.fence_pos["loc"], self.fence_pos["orientation"])
+                self.board.place_fence()
+            else:
+                self.board.place_fence({
+                    "fence": None,  # No fence object is needed if not in visual mode
+                    "orientation": self.fence_pos["orientation"],
+                    "loc": self.fence_pos["loc"]
+                })
             self.fence_count -= 1
+
+    def get_move(self):
+        return self.nxt_move if self.nxt_move != None else self.fence_pos
 
     def game_over(self, game_state):
         player_row = game_state["player_loc"]

@@ -15,7 +15,7 @@ def main(visual_mode=True, max_turns=200):
     else:
         screen = None
 
-    player_1 = Player("Red", (8, 4), (226, 37, 37))
+    player_1 = Alice((8, 4), (226, 37, 37))
     player_2 = Alice((0, 4), (25, 28, 232))
     board = Board(screen, player_1, player_2)
     
@@ -48,7 +48,8 @@ def main(visual_mode=True, max_turns=200):
                     if isinstance(board.current_player, Agent):
                         board.current_player.make_move()
                         agent_calculating = False
-                        pygame.time.set_timer(pygame.USEREVENT, 0)
+                        if visual_mode:
+                            pygame.time.set_timer(pygame.USEREVENT, 0)
 
                         # Log the move and decision
                         move_log.append({
@@ -76,7 +77,19 @@ def main(visual_mode=True, max_turns=200):
             agent_calculating = True
             player.make_decision()  # Let the agent decide
 
-            pygame.time.set_timer(pygame.USEREVENT, 250)
+            if visual_mode:
+                pygame.time.set_timer(pygame.USEREVENT, 250)
+            else:
+                print(board.current_player.get_move())
+                player.make_move(visual_mode)
+                move_log.append({
+                    "turn": turn_count + 1,
+                    "player": board.current_player.name,
+                    "player_location": board.current_player.current_location,
+                    "move": board.current_player.get_move()
+                })
+                agent_calculating = False
+                turn_count += 1
 
 
     if visual_mode:
@@ -89,4 +102,4 @@ def main(visual_mode=True, max_turns=200):
         print(log)
 
 if __name__ == "__main__":
-    main(visual_mode=True)
+    main(visual_mode=False)
