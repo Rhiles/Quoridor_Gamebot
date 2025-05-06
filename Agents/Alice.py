@@ -30,7 +30,7 @@ class Alice(Agent):
                     self.nxt_move = None
 
 
-    def make_move(self, visual_mode):
+    def make_move(self, visual_mode=True):
         if self.fence_pos == None:
             self.board.move_player(self.nxt_move["move"])
         else:
