@@ -88,6 +88,7 @@ class Alice(Agent):
                 alpha = max(alpha, eval_score)
                 if beta <= alpha:
                     break
+            # Take one of the state from top 2 choices
             return max_eval, random.choice(best_states)
 
         else:
@@ -102,6 +103,7 @@ class Alice(Agent):
                 beta = min(beta, eval_score)
                 if beta <= alpha:
                     break
+            # Take the best state as we can not neglect the opponent
             return min_eval, random.choice(best_states)
 
 

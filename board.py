@@ -1,5 +1,6 @@
 from pygame import Surface, Rect
 from collections import deque
+import random
 import pygame
 import copy
 import math
@@ -15,8 +16,10 @@ class Board():
         self.tile_width = 60
         self.fence_color = (225, 157, 0)
         self.tiles: list[list[Rect]] = []
-        self.current_player: Player =  player_1
-        self.opponent: Player = player_2
+        self.player_1 = player_1
+        self.player_2 = player_2
+        self.current_player: Player =  random.choice([self.player_1, self.player_2])
+        self.opponent: Player = player_2 if self.current_player == self.player_1 else self.player_1
         self.winner = None
         self.block_mode = False
         self.selected_fence = {
@@ -97,7 +100,7 @@ class Board():
 
         # Draw player stats
         draw_pos = (play_stats.left + 22, play_stats.top + 40)
-        for player in [self.opponent, self.current_player]:
+        for player in [self.player_2, self.player_1]:
             name = font.render(player.name, True, (225, 225, 225))
             name_rect = self.screen.blit(name, draw_pos)
             x, y = name_rect.midright[0] + 7, name_rect.midright[1]

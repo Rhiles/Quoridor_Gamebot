@@ -5,6 +5,7 @@ from board import Board
 from player import Player
 from Agents.Agent import Agent
 from Agents.Alice import Alice
+from Agents.Bob import Bob
 
 def main(visual_mode=True, max_turns=200):
     if visual_mode:
@@ -15,7 +16,7 @@ def main(visual_mode=True, max_turns=200):
     else:
         screen = None
 
-    player_1 = Alice((8, 4), (226, 37, 37))
+    player_1 = Bob((8, 4), (226, 37, 37))
     player_2 = Alice((0, 4), (25, 28, 232))
     board = Board(screen, player_1, player_2)
     
@@ -46,11 +47,6 @@ def main(visual_mode=True, max_turns=200):
                     board.switch_fence_orientation()
                 elif event.type == pygame.USEREVENT:
                     if isinstance(board.current_player, Agent):
-                        board.current_player.make_move()
-                        agent_calculating = False
-                        if visual_mode:
-                            pygame.time.set_timer(pygame.USEREVENT, 0)
-
                         # Log the move and decision
                         move_log.append({
                             "turn": turn_count + 1,
@@ -58,6 +54,11 @@ def main(visual_mode=True, max_turns=200):
                             "player_location": board.current_player.current_location,
                             "move": board.current_player.get_move()
                         })
+                        board.current_player.make_move()
+                        agent_calculating = False
+                        if visual_mode:
+                            pygame.time.set_timer(pygame.USEREVENT, 0)
+
                         turn_count += 1
 
         if board.winner:
@@ -102,4 +103,4 @@ def main(visual_mode=True, max_turns=200):
         print(log)
 
 if __name__ == "__main__":
-    main(visual_mode=False)
+    main(visual_mode=True)
