@@ -8,6 +8,7 @@ class Player():
         self.fences: list[Rect] = []
         self.color = color
         self.winning_row = abs(location[0] - 8)
+        self.win_count = 0
 
     def update_current_location(self, location):
         self.prev_location = self.current_location

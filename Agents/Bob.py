@@ -92,7 +92,7 @@ class Bob(Agent):
             c1, c2 = opponent_loc[1] - 3, opponent_loc[1] + 4
             for row in range(r1, r2):
                 for col in range(c1, c2):
-                    if 0 <= row <= 8 and 0<= col <= 8 and self.board.validate_fence_placement(row, col, orientation, fences):
+                    if 0 <= row <= 7 and 0<= col <= 7 and self.board.validate_fence_placement(row, col, orientation, fences):
                         temp_fences = copy.deepcopy(fences)
                         temp_fences[orientation].add((row, col))
                         
