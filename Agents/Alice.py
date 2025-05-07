@@ -74,37 +74,30 @@ class Alice(Agent):
                 state["opponent_fence_count"]
             ), state
 
-        best_states = []
+        best_state = None
 
         if maximizing_player:
             max_eval = float('-inf')
             for child in self.generate_child_states(state, is_bot=True):
                 eval_score, _ = self.minimax(child, depth - 1, alpha, beta, False)
-                if eval_score > max_eval:
+                if eval_score >= max_eval:
                     max_eval = eval_score
-                    best_states = [child]
-                elif eval_score == max_eval:
-                    best_states.append(child)
+                    best_state = child
                 alpha = max(alpha, eval_score)
                 if beta <= alpha:
                     break
-            # Take one of the state from top 2 choices
-            return max_eval, random.choice(best_states)
-
+            return max_eval, best_state
         else:
             min_eval = float('inf')
             for child in self.generate_child_states(state, is_bot=False):
                 eval_score, _ = self.minimax(child, depth - 1, alpha, beta, True)
-                if eval_score < min_eval:
+                if eval_score <= min_eval:
                     min_eval = eval_score
-                    best_states = [child]
-                elif eval_score == min_eval:
-                    best_states.append(child)
+                    best_state = child
                 beta = min(beta, eval_score)
                 if beta <= alpha:
                     break
-            # Take the best state as we can not neglect the opponent
-            return min_eval, random.choice(best_states)
+            return min_eval, best_state
 
 
     def generate_child_states(self, game_state, is_bot):
