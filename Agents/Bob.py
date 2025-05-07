@@ -13,10 +13,14 @@ class Bob(Agent):
     def make_decision(self):
         self.opponent = self.board.opponent
         self.game_state = self.board.get_game_state()
-        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state))
+        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state)) if self.fence_count > 0 else None
         
         best_path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
-        nxt_move = best_path[0]
+        if len(best_path) > 0:
+            nxt_move = best_path[0]
+        else:
+            valid_moves = self.board.get_valid_moves(self.game_state["player_loc"], self.game_state["opponent_loc"], self.game_state["fences"])
+            nxt_move = random.choice(valid_moves)
         move_score = self.evaluate_game_state(
             nxt_move,
             self.game_state["player_winning_row"],

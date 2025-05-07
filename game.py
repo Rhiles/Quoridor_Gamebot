@@ -70,7 +70,6 @@ def main(visual_mode=True, max_turns=300, games = 1):
                 board.winner.win_count += 1
                 print(f"Winner: {board.winner.name}")
                 if board.winner.first_start:
-                    board.winner.first_start_games += 1
                     board.winner.first_start_wins += 1
                 break
 
@@ -115,4 +114,4 @@ def main(visual_mode=True, max_turns=300, games = 1):
         print(f"{player.name}'s first start wins: {player.first_start_wins}")
 
 if __name__ == "__main__":
-    main(visual_mode=False, games=5)
+    main(visual_mode=True)
