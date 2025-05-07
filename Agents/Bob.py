@@ -9,12 +9,11 @@ class Bob(Agent):
         super().__init__("Bob", location, color)
         self.board = None
         self.ready_to_play = False
-        self.move = None
     
     def make_decision(self):
         self.opponent = self.board.opponent
         self.game_state = self.board.get_game_state()
-        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state)) if self.fence_count > 0 else None
+        self.fence_pos = self.find_best_fence_placement(copy.deepcopy(self.game_state))
         
         best_path = self.find_shortest_path(self.game_state["player_loc"], self.game_state["player_winning_row"], self.game_state["opponent_loc"], self.game_state["fences"])
         nxt_move = best_path[0]
@@ -28,12 +27,15 @@ class Bob(Agent):
             self.game_state["opponent_fence_count"]
         )
 
-        self.nxt_move = {"score": move_score, "move": nxt_move}
+        if self.fence_pos == None or move_score > self.fence_pos["score"]:
+            self.nxt_move = {"score": move_score, "move": nxt_move}
+            self.fence_pos = None
+        else:
+            self.nxt_move = None
 
     def make_move(self, visual_mode=True):
-        if self.fence_pos == None or self.nxt_move["score"] > self.fence_pos["score"]:
+        if self.nxt_move:
             self.board.move_player(self.nxt_move["move"])
-            self.move = self.nxt_move
         else:
             if visual_mode:
                 self.board.set_selected_fence(self.fence_pos["loc"], self.fence_pos["orientation"])
@@ -45,10 +47,9 @@ class Bob(Agent):
                     "loc": self.fence_pos["loc"]
                 })
             self.fence_count -= 1
-            self.move = self.fence_pos
 
     def get_move(self):
-        return self.move
+        return self.nxt_move if self.nxt_move != None else self.fence_pos
 
     def find_shortest_path(self, start_pos, goal, opponent_loc, fences):
         open_set = PriorityQueue()
@@ -158,7 +159,7 @@ class Bob(Agent):
         H4 = player_fences_left - opponent_fences_left
 
         # Combine using weights
-        score = 4 * H1 + (0.5 * H2 - 1.25 * H2_OPPONENT) + 0.2 * H3 + 1 * H4
+        score = 4 * H1 + (0.5 * H2 - H2_OPPONENT) + 0.2 * H3 + 1 * H4
 
         return score
 

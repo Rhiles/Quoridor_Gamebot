@@ -240,7 +240,7 @@ class Alice(Agent):
 
         # Heuristic 2: Mobility (number of valid moves)
         H2 = len(self.board.get_valid_moves(player_loc, opponent_loc, fences))
-        H2_opponent = len(self.board.get_valid_moves(opponent_loc, player_loc, fences))
+        H2_OPPONENT = len(self.board.get_valid_moves(opponent_loc, player_loc, fences))
 
         # Heuristic 3: Distance from center
         center = (4, 4)
@@ -250,7 +250,7 @@ class Alice(Agent):
         H4 = player_fences_left - opponent_fences_left
 
         # Combine using weights
-        score = 3 * H1 + 1 * H2 + 0.5 * H3 + 1 * H4
+        score = 3 * H1 + (H2 - 0.75 * H2_OPPONENT) + 0.5 * H3 + 1 * H4
 
         return score
 

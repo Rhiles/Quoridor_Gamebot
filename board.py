@@ -20,6 +20,7 @@ class Board():
         self.player_2 = player_2
         self.current_player: Player =  random.choice([self.player_1, self.player_2])
         self.opponent: Player = player_2 if self.current_player == self.player_1 else self.player_1
+        self.current_player.first_start = True
         self.winner = None
         self.block_mode = False
         self.selected_fence = {

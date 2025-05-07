@@ -69,6 +69,9 @@ def main(visual_mode=True, max_turns=300, games = 1):
                     screen.fill(board.winner.color)
                 board.winner.win_count += 1
                 print(f"Winner: {board.winner.name}")
+                if board.winner.first_start:
+                    board.winner.first_start_games += 1
+                    board.winner.first_start_wins += 1
                 break
 
             if visual_mode:
@@ -85,14 +88,13 @@ def main(visual_mode=True, max_turns=300, games = 1):
                 if visual_mode:
                     pygame.time.set_timer(pygame.USEREVENT, 250)
                 else:
-                    print(board.current_player.get_move())
-                    player.make_move(visual_mode)
                     move_log.append({
                         "turn": turn_count + 1,
                         "player": board.current_player.name,
                         "player_location": board.current_player.current_location,
                         "move": board.current_player.get_move()
                     })
+                    player.make_move(visual_mode)
                     agent_calculating = False
                     turn_count += 1
         if not visual_mode:
@@ -109,6 +111,8 @@ def main(visual_mode=True, max_turns=300, games = 1):
 
     for player in [player_1, player_2]:
         print(f"{player.name}: {player.win_count}")
+        print(f"{player.name}'s first start games: {player.first_start_games}")
+        print(f"{player.name}'s first start wins: {player.first_start_wins}")
 
 if __name__ == "__main__":
-    main(visual_mode=False, games=100)
+    main(visual_mode=False, games=5)
