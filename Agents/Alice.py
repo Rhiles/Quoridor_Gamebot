@@ -222,7 +222,7 @@ class Alice(Agent):
         return best_placement
     
     def evaluate_game_state(self, player_loc, player_winning_row, opponent_loc, opponent_winning_row, fences, player_fences_left, opponent_fences_left):
-        if player_loc != player_winning_row:
+        if player_loc[0] != player_winning_row:
             # Shortest path lengths
             bot_path = self.find_shortest_path(player_loc, player_winning_row, opponent_loc, fences)
             opp_path = self.find_shortest_path(opponent_loc, opponent_winning_row, player_loc, fences)
