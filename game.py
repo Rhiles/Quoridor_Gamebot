@@ -12,6 +12,7 @@ def main(visual_mode=True, max_turns=300, games = 1):
     player_2 = Player("Player", (0, 4), (25, 28, 232))
     # player_1 = Player("Player", (0, 4), (25, 28, 232))
     # player_2 = Alice((0, 4), (25, 28, 232))
+
     while games > 0:
         if visual_mode:
             pygame.init()
